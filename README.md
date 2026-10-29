@@ -1,6 +1,6 @@
 # TraceCam
 
-Put your iPhone on a stand above a sheet of paper, overlay a reference picture on the live camera view, and trace it by hand. TraceCam is a **web app (PWA)** that runs in Safari and can be installed on the iPhone Home Screen. No Mac, no Xcode, no accounts, no backend.
+Put your phone on a stand or a cup above a sheet of paper, overlay a reference picture on the live camera view, and trace it by hand. TraceCam is a **web app (PWA)** that runs in Safari.
 
 - Live rear-camera preview, full screen, never stretched
 - Pick an image from Photos/Files; drag, pinch, twist, flip, rotate 90, fine-nudge, fit, reset
@@ -8,6 +8,8 @@ Put your iPhone on a stand above a sheet of paper, overlay a reference picture o
 - **Lock** the image so it can't move while you draw
 - Focus mode (Hide controls), screen Keep-Awake, offline app shell
 - Private: images and camera video never leave the phone. No analytics, no third-party scripts.
+
+I created this mostly for personal use :) So that it's accessible on iPhone which is what I am using.
 
 ## Contents
 
@@ -23,7 +25,7 @@ Put your iPhone on a stand above a sheet of paper, overlay a reference picture o
 
 ## How it works
 
-**Architecture.** A static site: HTML + CSS + vanilla JavaScript ES modules. No framework, no build step.
+**Architecture.** A static site: HTML + CSS + vanilla JavaScript ES modules. 
 
 - The **stage** (`#stage`) is a full-screen box holding the `<video>` camera preview (`object-fit: cover`, so it fills the screen without stretching) and the overlay `<img>` on top. Both share the same box, so they share one coordinate space.
 - The overlay's position is stored as the pixel offset of the image **centre** from the **stage centre**, plus `scale` (1 = fitted size when loaded), `rotation` (degrees) and `flip`. It is drawn with a single CSS `transform`. Changing opacity only changes the image's `opacity`; it never touches the transform.
@@ -69,50 +71,66 @@ Run the automated tests:
 npm test
 ```
 
-**Testing the layout on the desktop:** in Chrome/Edge press `F12`, click the "device toolbar" icon (phone/tablet), and choose "iPhone 14 Pro" or similar. You can pick a picture, drag it (mouse), zoom (scroll wheel), and use all buttons.
-
-**Why desktop can't fully test the iPhone:** desktop Chrome is not Safari. It has a different camera stack, no real multi-touch (pinch/twist), different safe-area insets, no iOS wake-lock or Home Screen behavior, and a different service-worker lifecycle. Camera permission and PWA install must be verified on the phone. A phone can't use `http://<your-pc-ip>:8080` for the camera either: Safari only allows the camera on **HTTPS** (or `localhost`). That's why we publish to GitHub Pages, which gives you HTTPS for free.
+**Testing the layout on the desktop:** in Chrome/Edge press `F12`, click the "device toolbar" icon (phone/tablet), and choose any phone dimensions. You can pick a picture, drag it (mouse), zoom (scroll wheel), and use all buttons.
 
 ## Publish with GitHub Pages
 
-### 1. Make a GitHub account and an empty repository
+Anyone can publish their own copy of TraceCam. You can either **fork** this repository (easiest) or clone it into a new repository that you own. Each copy gets its own URL and can be installed independently on an iPhone.
 
-1. Sign up at <https://github.com/signup> (free).
-2. Click the **+** (top right) -> **New repository**.
-3. Repository name: `TraceCam`. Choose **Public** (free GitHub Pages needs public on free accounts). Do **not** tick "Add a README" or any other file. Click **Create repository**.
+### Option A: Fork this repository
 
-### 2. Upload the project from VS Code's terminal
+1. Sign in to <https://github.com>.
+2. Open the TraceCam repository and click **Fork**.
+3. Choose your account and keep the repository name, or choose another name.
+4. Open your fork, then go to **Settings** -> **Pages**.
+5. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
+6. Select the branch containing the project (usually `master`) and folder `/ (root)`, then click **Save**.
 
-Tell Git who you are (once per PC; use your own name/email):
+### Option B: Clone and publish in your own repository
+
+1. Sign up at <https://github.com/signup> if needed.
+2. Create a new **Public** repository. Do not add a README or other files if you are uploading this project into it.
+3. If you are starting from scratch, run these commands from the parent folder where you want the project to be downloaded. Replace `YOUR-USERNAME` and `YOUR-REPOSITORY`:
 
 ```powershell
-git config --global user.name "Your Name"
-git config --global user.email "you@example.com"
+git clone https://github.com/CrystalPhe/TraceCam.git
+cd TraceCam
+git remote remove origin
+git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
 ```
 
-Then, in the `TraceCam` folder (replace `YOUR-USERNAME`):
+If you already have the project folder, run the `git remote` commands from that folder instead. If Git reports that no commit exists, create one first:
 
 ```powershell
-git init
 git add .
 git commit -m "TraceCam first version"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/TraceCam.git
-git push -u origin main
 ```
 
-A browser window will ask you to sign in to GitHub the first time. (Prefer clicking? VS Code's **Source Control** panel on the left can do `git add`/commit, and **GitHub Desktop** (<https://desktop.github.com/>) can publish a folder as a repository without commands.)
+Then push the project:
 
-### 3. Turn on GitHub Pages
+```powershell
+git push -u origin master
+```
 
-1. On your repository page click **Settings** -> **Pages** (left sidebar).
-2. Under **Build and deployment**, set **Source** = **Deploy from a branch**.
-3. Branch = `main`, folder = `/ (root)`, click **Save**.
-4. Wait 1-2 minutes and refresh the Pages settings page. A green box says **"Your site is live at https://YOUR-USERNAME.github.io/TraceCam/"**. That's your HTTPS URL.
+A browser window may ask you to sign in to GitHub. You can also use VS Code's **Source Control** panel or **GitHub Desktop** (<https://desktop.github.com/>).
+
+### Find your published URL
+
+1. In your repository, click **Settings** -> **Pages**.
+2. If you have not already done so, choose **Deploy from a branch**, select the project branch (usually `master`) and `/ (root)`, then click **Save**.
+3. Wait 1-2 minutes and refresh the page. GitHub displays your URL:
+
+   `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`
+
+For a fork named `TraceCam`, the URL is usually:
+
+`https://YOUR-USERNAME.github.io/TraceCam/`
+
+You may optionally enter a domain you own in the **Custom domain** field. Leave it empty if you do not own a domain; the GitHub Pages URL works without one.
 
 ## Use it on your iPhone
 
-1. Open **Safari** (use Safari itself, not an in-app browser from another app) and go to `https://YOUR-USERNAME.github.io/TraceCam/`. You need internet for this first visit.
+1. Open **Safari** (use Safari itself, not an in-app browser from another app) and go to your published GitHub Pages URL. You need internet for this first visit.
 2. Tap **Start camera**. Safari asks to use the camera: tap **Allow**. (If you chose "Don't Allow", see [Troubleshooting](#troubleshooting).)
 3. Tap **Image...** (or "Choose image"), pick a picture from your Photos library.
 4. Drag with one finger, pinch to resize, twist two fingers to rotate. Adjust **Image opacity**.
