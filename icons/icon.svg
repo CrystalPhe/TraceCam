@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>TraceCam</title>
+  <rect width="1024" height="1024" fill="#17171c"/>
+  <g fill="#f4f4f6">
+    <rect x="205" y="205" width="185" height="56"/><rect x="205" y="205" width="56" height="185"/>
+    <rect x="634" y="205" width="185" height="56"/><rect x="763" y="205" width="56" height="185"/>
+    <rect x="205" y="763" width="185" height="56"/><rect x="205" y="634" width="56" height="185"/>
+    <rect x="634" y="763" width="185" height="56"/><rect x="763" y="634" width="56" height="185"/>
+  </g>
+  <circle cx="512" cy="512" r="174" fill="none" stroke="#4cc9f0" stroke-width="51"/>
+  <circle cx="512" cy="512" r="41" fill="#4cc9f0"/>
+</svg>

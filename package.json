@@ -1,0 +1,13 @@
+{
+  "name": "tracecam",
+  "version": "1.0.0",
+  "description": "Overlay a reference image on a live camera feed for tracing. Static PWA, no dependencies.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
