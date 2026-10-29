@@ -6,11 +6,9 @@ const KEY = 'tracecam.prefs.v1';
 export const DEFAULT_PREFS = Object.freeze({
   opacity: 50, // percent
   keepAwake: true,
-  nudgeStep: 5, // px per fine-position tap
+  nudgeStep: 1, // legacy preference; nudging is now fixed at 1 px
   ui: 'full', // 'full' | 'focus'
 });
-
-const NUDGE_STEPS = [1, 5, 20];
 
 /** Validate untrusted data (from storage) and fill in defaults. */
 export function sanitizePrefs(raw) {
@@ -20,7 +18,6 @@ export function sanitizePrefs(raw) {
     p.opacity = Math.min(100, Math.max(0, Math.round(raw.opacity)));
   }
   if (typeof raw.keepAwake === 'boolean') p.keepAwake = raw.keepAwake;
-  if (NUDGE_STEPS.includes(raw.nudgeStep)) p.nudgeStep = raw.nudgeStep;
   if (raw.ui === 'full' || raw.ui === 'focus') p.ui = raw.ui;
   return p;
 }

@@ -102,10 +102,11 @@ function renderOpacity() {
 }
 
 function updateStatus() {
-  const parts = [];
-  parts.push(app.camState === 'running' ? 'Camera on' : app.camState === 'starting' ? 'Starting camera…' : 'Camera off');
-  if (app.hasImage) parts.push(app.locked ? 'Image LOCKED' : 'Image unlocked');
-  el.status.textContent = parts.join(' · ');
+  if (app.camState === 'starting') el.status.textContent = 'Starting camera…';
+  else if (app.camState !== 'running') el.status.textContent = 'Camera off';
+  else if (!app.hasImage) el.status.textContent = 'Choose an image to begin';
+  else if (app.locked) el.status.textContent = 'Image locked';
+  else el.status.textContent = 'Drag to align';
 }
 
 function syncControls() {
@@ -127,10 +128,6 @@ function syncControls() {
     b.disabled = a === 'remove' ? !app.hasImage : !canEdit;
   });
   document.querySelector('[data-action="flip"]').setAttribute('aria-pressed', String(app.t.flip));
-  document.querySelectorAll('[data-step]').forEach((b) => {
-    b.setAttribute('aria-pressed', String(Number(b.dataset.step) === app.prefs.nudgeStep));
-  });
-
   el.camToggle.textContent = app.camState === 'running' || app.camState === 'starting' ? 'Stop camera' : 'Start camera';
   el.keepAwake.checked = app.prefs.keepAwake;
   updateStatus();
@@ -205,7 +202,7 @@ function removeImage() {
 /* Image actions (every button in the panel maps to one entry here)    */
 /* ------------------------------------------------------------------ */
 
-const nudge = (dx, dy) => () => setTransform({ ...app.t, x: app.t.x + dx * app.prefs.nudgeStep, y: app.t.y + dy * app.prefs.nudgeStep });
+const nudge = (dx, dy) => () => setTransform({ ...app.t, x: app.t.x + dx, y: app.t.y + dy });
 
 const actions = {
   remove: removeImage,
@@ -239,6 +236,44 @@ document.querySelectorAll('[data-action]').forEach((btn) => {
   });
 });
 
+// Arrow buttons move 1 px per tap; holding repeats gently after a short pause.
+document.querySelectorAll('.nudge [data-action]').forEach((btn) => {
+  let holdDelay = 0;
+  let repeat = 0;
+  let didRepeat = false;
+
+  const move = () => actions[btn.dataset.action]();
+  const stop = () => {
+    clearTimeout(holdDelay);
+    clearInterval(repeat);
+    if (didRepeat) btn.dataset.skipClick = 'true';
+    didRepeat = false;
+  };
+  const cancel = () => {
+    clearTimeout(holdDelay);
+    clearInterval(repeat);
+    didRepeat = false;
+  };
+
+  btn.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    didRepeat = false;
+    holdDelay = setTimeout(() => {
+      didRepeat = true;
+      move();
+      repeat = setInterval(move, 100);
+    }, 350);
+  });
+  window.addEventListener('pointerup', stop);
+  btn.addEventListener('pointercancel', cancel);
+  btn.addEventListener('click', (event) => {
+    if (btn.dataset.skipClick !== 'true') return;
+    delete btn.dataset.skipClick;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+});
+
 /* ------------------------------------------------------------------ */
 /* Lock, focus mode, opacity, steps                                    */
 /* ------------------------------------------------------------------ */
@@ -267,13 +302,6 @@ el.opacity.addEventListener('input', () => setOpacity(el.opacity.value));
 el.opacity.addEventListener('change', persist);
 document.querySelectorAll('[data-opacity]').forEach((b) =>
   b.addEventListener('click', () => { setOpacity(b.dataset.opacity); persist(); }));
-
-document.querySelectorAll('[data-step]').forEach((b) =>
-  b.addEventListener('click', () => {
-    app.prefs.nudgeStep = Number(b.dataset.step);
-    persist();
-    syncControls();
-  }));
 
 /* ------------------------------------------------------------------ */
 /* File picking                                                        */

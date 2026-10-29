@@ -41,7 +41,7 @@
     <p id="errorBox" class="error" role="alert" hidden></p>
     <div class="row">
       <button id="startBtn" class="btn primary" type="button">Start camera</button>
-      <label class="btn" for="fileInput">Choose image</label>
+      <label class="btn" for="fileInput">Image</label>
     </div>
     <p id="installHint" class="hint" hidden>To install: tap Safari’s Share button → Add to Home Screen.</p>
   </section>
@@ -70,20 +70,22 @@
       <button class="btn small" type="button" data-opacity="100">100%</button>
     </div>
 
-    <div class="row tools">
-      <label class="btn" for="fileInput">Image…</label>
-      <button class="btn" type="button" data-action="remove">Remove</button>
+    <div class="row tools primary-tools">
+      <label class="btn image-pick" for="fileInput">
+        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m5 17 4.5-4.5 3 3 2-2L19 18"/></svg>
+        <span>New</span>
+      </label>
       <button class="btn" type="button" data-action="fit">Fit</button>
       <button class="btn" type="button" data-action="reset">Reset</button>
     </div>
-    <div class="row tools">
-      <button class="btn" type="button" data-action="rotate-left" aria-label="Rotate left 90 degrees">↺ 90°</button>
-      <button class="btn" type="button" data-action="rotate-right" aria-label="Rotate right 90 degrees">↻ 90°</button>
-      <button class="btn" type="button" data-action="flip" aria-pressed="false">Flip</button>
-    </div>
-
-    <details id="fine">
-      <summary>Fine tune</summary>
+    <details id="adjust">
+      <summary>Adjust image</summary>
+      <div class="adjust-tools">
+        <button class="btn" type="button" data-action="rotate-left" aria-label="Rotate left 90 degrees">↺ 90°</button>
+        <button class="btn" type="button" data-action="rotate-right" aria-label="Rotate right 90 degrees">↻ 90°</button>
+        <button class="btn" type="button" data-action="flip" aria-pressed="false">Flip</button>
+        <button class="btn danger-action" type="button" data-action="remove">Remove image</button>
+      </div>
       <div class="fine-grid">
         <div class="nudge" role="group" aria-label="Move image">
           <button class="btn" type="button" data-action="nudge-up" aria-label="Move up">▲</button>
@@ -92,11 +94,6 @@
           <button class="btn" type="button" data-action="nudge-right" aria-label="Move right">▶</button>
         </div>
         <div class="stack">
-          <div class="row" role="group" aria-label="Step size">
-            <button class="btn small" type="button" data-step="1" aria-pressed="false">1 px</button>
-            <button class="btn small" type="button" data-step="5" aria-pressed="true">5 px</button>
-            <button class="btn small" type="button" data-step="20" aria-pressed="false">20 px</button>
-          </div>
           <div class="row">
             <button class="btn small" type="button" data-action="rot-minus" aria-label="Rotate 1 degree left">↺ 1°</button>
             <button class="btn small" type="button" data-action="rot-plus" aria-label="Rotate 1 degree right">↻ 1°</button>
@@ -124,8 +121,9 @@
       <h2 id="helpTitle">How to use TraceCam</h2>
       <ol>
         <li>Put your phone on a stand above the paper, then tap <b>Start camera</b>.</li>
-        <li>Tap <b>Image…</b> and pick a picture from Photos or Files.</li>
+        <li>Tap <b>New</b> and pick a picture from Photos or Files. Choosing another image replaces the current one.</li>
         <li>Drag with one finger to move; pinch to resize; twist two fingers to rotate.</li>
+        <li>Use the arrow buttons for 1 px nudges; press and hold to keep moving in that direction.</li>
         <li>Set the opacity so you can see both the paper and the image.</li>
         <li>Tap <b>Lock</b> so the image can’t move while you draw. Tap <b>Unlock</b> to adjust again.</li>
         <li><b>Hide controls</b> clears the screen; <b>Show controls</b> brings them back.</li>
