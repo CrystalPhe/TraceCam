@@ -59,6 +59,42 @@ html, body {
   /* opacity is set from JS and applies to this element only */
 }
 
+/* Grid shares the image's size and transform, so it rotates/flips/scales with it. */
+#grid {
+  position: absolute; left: 50%; top: 50%;
+  transform-origin: 50% 50%; overflow: visible; pointer-events: none;
+}
+#grid line, #grid rect {
+  stroke: #fff; stroke-width: 1.5; fill: none; vector-effect: non-scaling-stroke;
+  stroke-opacity: 0.9;
+}
+/* Thin dark halo so white lines stay visible over white paper. */
+#grid { filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
+
+/* ---------- Dot tracking ---------- */
+#dots { position: absolute; inset: 0; pointer-events: none; }
+.dot-ind {
+  position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+  border-radius: 50%; border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75), inset 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+  touch-action: none;
+}
+.dot-ind::before, .dot-ind::after { /* centre crosshair */
+  content: ""; position: absolute; left: 50%; top: 50%; background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+.dot-ind::before { width: 2px; height: 14px; margin: -7px 0 0 -1px; }
+.dot-ind::after { width: 14px; height: 2px; margin: -1px 0 0 -7px; }
+.dot-ind.ok { border-color: #4ade80; }
+.dot-ind.missing { border-color: var(--danger); border-style: dashed; }
+.dot-ind.dragging { transform: scale(1.15); }
+body[data-dots="custom"] .dot-ind { pointer-events: auto; cursor: grab; }
+.dot-mark {
+  position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%; border: 2px solid #4ade80; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
 /* Invisible layer that receives the drag / pinch gestures. */
 #surface { position: absolute; inset: 0; touch-action: none; cursor: grab; }
 body[data-locked="true"] #surface { pointer-events: none; cursor: default; }
@@ -146,6 +182,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 input[type="range"]::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 0; }
 
+.seg { margin-bottom: 8px; }
+.seg .btn { padding: 0 4px; }
 details { border-top: 1px solid var(--line); padding-top: 8px; }
 summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
 .fine-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; padding-bottom: 4px; }

@@ -5,6 +5,9 @@ import { WakeLockManager } from './wakelock.js';
 import { attachGestures } from './gestures.js';
 import { loadImageFile, ImageLoadError } from './image-loader.js';
 import { loadPrefs, savePrefs } from './prefs.js';
+import { cssFilter, makeEdgeUrl } from './image-filters.js';
+import { DotsController } from './dots.js';
+import { bakeSimilarity } from './tracking-math.js';
 import {
   DEFAULT_TRANSFORM,
   FIT_MARGIN,
@@ -17,7 +20,7 @@ import {
 
 const $ = (id) => document.getElementById(id);
 const el = {
-  stage: $('stage'), video: $('camera'), overlay: $('overlay'), surface: $('surface'),
+  stage: $('stage'), video: $('camera'), overlay: $('overlay'), grid: $('grid'), invertBtn: $('invertBtn'), surface: $('surface'),
   status: $('status'), lockBtn: $('lockBtn'), focusBtn: $('focusBtn'),
   startCard: $('startCard'), startBtn: $('startBtn'), errorBox: $('errorBox'), installHint: $('installHint'),
   opacity: $('opacity'), opacityOut: $('opacityOut'),
@@ -25,6 +28,7 @@ const el = {
   helpBtn: $('helpBtn'), helpClose: $('helpClose'), sheet: $('sheet'),
   realign: $('realign'), realignOk: $('realignOk'),
   toast: $('toast'), toastText: $('toastText'), toastAction: $('toastAction'),
+  overlayLayer: $('overlayLayer'), dotsLayer: $('dots'), dotsHint: $('dotsHint'),
 };
 
 const app = {
@@ -33,6 +37,7 @@ const app = {
   base: { w: 0, h: 0 }, // overlay element size in CSS px at scale 1
   nat: { w: 0, h: 0 },
   imageUrl: null,
+  edgeUrl: null, // outline version of the current image (made on demand)
   hasImage: false,
   locked: false,
   focus: false,
@@ -78,12 +83,143 @@ function persist() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Dot tracking                                                        */
+/* ------------------------------------------------------------------ */
+
+const dots = new DotsController({
+  stage: el.stage,
+  layer: el.overlayLayer,
+  container: el.dotsLayer,
+  video: el.video,
+  onUpdate: () => syncControls(),
+});
+
+const DOT_HINTS = {
+  off: 'The image stays fixed on the screen.',
+  rect: 'Stick 4 coloured dots on the paper and slide the paper until each dot sits in an indicator. Hide controls to see the lower ones. When all 4 turn green, tap Lock.',
+  custom: 'Stick 4 coloured dots on the paper, then drag each indicator onto a dot. Hide controls to reach the lower ones. When all 4 turn green, tap Lock.',
+};
+
+/** Stop tracking and keep the image where tracking had moved it. */
+function endTracking() {
+  const res = dots.stopTracking();
+  if (!res || !app.hasImage) return;
+  const s = stageSize();
+  app.t = sanitizeTransform(bakeSimilarity(app.t, res.S, res.from, s), s.w, s.h);
+  render();
+}
+
+document.querySelectorAll('[data-dots]').forEach((b) =>
+  b.addEventListener('click', () => {
+    if (app.locked) return;
+    app.prefs.dots = b.dataset.dots;
+    persist();
+    dots.setMode(app.prefs.dots);
+  }));
+
+/* ------------------------------------------------------------------ */
 /* Rendering                                                           */
 /* ------------------------------------------------------------------ */
 
 function render() {
-  el.overlay.style.transform = cssTransform(app.t);
+  const tf = cssTransform(app.t);
+  el.overlay.style.transform = tf;
+  el.grid.style.transform = tf;
 }
+
+/* ------------------------------------------------------------------ */
+/* Look: filter, invert, grid                                          */
+/* ------------------------------------------------------------------ */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function renderGrid() {
+  const n = app.prefs.grid;
+  el.grid.replaceChildren();
+  // SVG elements have no `.hidden` property, so toggle the attribute directly.
+  const show = app.hasImage && n > 0;
+  el.grid.toggleAttribute('hidden', !show);
+  if (!show) return;
+  const frame = document.createElementNS(SVG_NS, 'rect');
+  for (const [k, v] of Object.entries({ x: 0, y: 0, width: 1, height: 1 })) frame.setAttribute(k, v);
+  el.grid.append(frame);
+  for (let i = 1; i < n; i++) {
+    const p = i / n;
+    for (const [x1, y1, x2, y2] of [[p, 0, p, 1], [0, p, 1, p]]) {
+      const line = document.createElementNS(SVG_NS, 'line');
+      for (const [k, v] of Object.entries({ x1, y1, x2, y2 })) line.setAttribute(k, v);
+      el.grid.append(line);
+    }
+  }
+}
+
+async function applyLook() {
+  if (!app.hasImage) return;
+  const { filter, invert } = app.prefs;
+  if (filter === 'edges') {
+    const source = app.imageUrl;
+    if (!app.edgeUrl) {
+      let url;
+      try {
+        url = await makeEdgeUrl(source);
+      } catch (err) {
+        console.warn('[TraceCam] Edge filter failed:', err?.message);
+        toast('Couldn’t make an outline of this image.', { duration: 5000 });
+        app.prefs.filter = 'color';
+        persist();
+        return applyLook();
+      }
+      if (app.imageUrl !== source || app.prefs.filter !== 'edges') {
+        URL.revokeObjectURL(url); // image or mode changed while computing
+        return app.imageUrl === source ? applyLook() : undefined;
+      }
+      app.edgeUrl = url;
+    }
+    if (el.overlay.src !== app.edgeUrl) el.overlay.src = app.edgeUrl;
+  } else if (el.overlay.src !== app.imageUrl) {
+    el.overlay.src = app.imageUrl;
+  }
+  el.overlay.style.filter = cssFilter(filter, invert);
+  syncLookButtons();
+}
+
+function dropEdgeUrl() {
+  if (app.edgeUrl) URL.revokeObjectURL(app.edgeUrl);
+  app.edgeUrl = null;
+}
+
+function syncLookButtons() {
+  document.querySelectorAll('[data-filter]').forEach((b) => {
+    b.disabled = !app.hasImage;
+    b.setAttribute('aria-pressed', String(b.dataset.filter === app.prefs.filter));
+  });
+  document.querySelectorAll('[data-grid]').forEach((b) => {
+    b.disabled = !app.hasImage;
+    b.setAttribute('aria-pressed', String(Number(b.dataset.grid) === app.prefs.grid));
+  });
+  el.invertBtn.disabled = !app.hasImage;
+  el.invertBtn.setAttribute('aria-pressed', String(app.prefs.invert));
+}
+
+document.querySelectorAll('[data-filter]').forEach((b) =>
+  b.addEventListener('click', () => {
+    app.prefs.filter = b.dataset.filter;
+    persist();
+    syncLookButtons();
+    applyLook();
+  }));
+document.querySelectorAll('[data-grid]').forEach((b) =>
+  b.addEventListener('click', () => {
+    app.prefs.grid = Number(b.dataset.grid);
+    persist();
+    renderGrid();
+    syncLookButtons();
+  }));
+el.invertBtn.addEventListener('click', () => {
+  app.prefs.invert = !app.prefs.invert;
+  persist();
+  applyLook();
+});
 
 function setTransform(next) {
   if (!app.hasImage) return;
@@ -105,7 +241,11 @@ function updateStatus() {
   if (app.camState === 'starting') el.status.textContent = 'Starting camera…';
   else if (app.camState !== 'running') el.status.textContent = 'Camera off';
   else if (!app.hasImage) el.status.textContent = 'Choose an image to begin';
-  else if (app.locked) el.status.textContent = 'Image locked';
+  else if (dots.tracking) {
+    const n = dots.visibleCount;
+    el.status.textContent = n >= 2 ? `Tracking ${n}/4 dots` : 'Tracking paused – dots covered';
+  } else if (app.locked) el.status.textContent = 'Image locked';
+  else if (app.prefs.dots !== 'off') el.status.textContent = `Dots found ${dots.foundCount}/4`;
   else el.status.textContent = 'Drag to align';
 }
 
@@ -130,6 +270,16 @@ function syncControls() {
   document.querySelector('[data-action="flip"]').setAttribute('aria-pressed', String(app.t.flip));
   el.camToggle.textContent = app.camState === 'running' || app.camState === 'starting' ? 'Stop camera' : 'Start camera';
   el.keepAwake.checked = app.prefs.keepAwake;
+  document.body.dataset.dots = app.prefs.dots;
+  document.body.dataset.tracking = String(dots.tracking);
+  document.querySelectorAll('[data-dots]').forEach((b) => {
+    b.disabled = app.locked; // change mode only while unlocked
+    b.setAttribute('aria-pressed', String(b.dataset.dots === app.prefs.dots));
+  });
+  el.dotsHint.textContent = dots.tracking
+    ? 'Tracking: the image follows the dots. If most dots are covered it holds still. Tap Unlock to adjust.'
+    : DOT_HINTS[app.prefs.dots];
+  syncLookButtons();
   updateStatus();
 }
 
@@ -143,6 +293,8 @@ function layoutBase() {
   app.base = b;
   el.overlay.style.width = `${b.w}px`;
   el.overlay.style.height = `${b.h}px`;
+  el.grid.style.width = `${b.w}px`;
+  el.grid.style.height = `${b.h}px`;
 }
 
 async function chooseFile(file) {
@@ -167,32 +319,39 @@ async function chooseFile(file) {
     // Roll back to the previous image state rather than showing a broken overlay.
     URL.revokeObjectURL(result.url);
     app.imageUrl = previousUrl;
-    if (previousUrl) el.overlay.src = previousUrl;
+    if (previousUrl) applyLook();
     toast('That image couldn’t be displayed. Try another one.', { duration: 6000 });
     return;
   }
   // Safe to free the old image only after the new one is on screen.
   if (previousUrl) URL.revokeObjectURL(previousUrl);
+  dropEdgeUrl(); // belonged to the previous image
 
   const wasLocked = app.locked;
+  dots.stopTracking(); // the new image starts fresh, nothing to keep
   app.hasImage = true;
   app.locked = false;
   el.overlay.hidden = false;
   layoutBase();
   app.t = { ...DEFAULT_TRANSFORM };
   render();
+  renderGrid();
   syncControls();
+  applyLook();
   if (wasLocked) toast('New image loaded – overlay unlocked.');
   else if (result.downscaled) toast('Large image reduced to save memory.');
 }
 
 function removeImage() {
+  dots.stopTracking();
   if (app.imageUrl) URL.revokeObjectURL(app.imageUrl);
   app.imageUrl = null;
+  dropEdgeUrl();
   app.hasImage = false;
   app.locked = false;
   el.overlay.hidden = true;
   el.overlay.removeAttribute('src');
+  renderGrid();
   app.t = { ...DEFAULT_TRANSFORM };
   gestures.cancel();
   syncControls();
@@ -280,6 +439,17 @@ document.querySelectorAll('.nudge [data-action]').forEach((btn) => {
 
 function setLocked(value) {
   if (value && !app.hasImage) return;
+  if (value && app.prefs.dots !== 'off') {
+    if (app.camState !== 'running') {
+      toast('Start the camera to use dot tracking.');
+      return;
+    }
+    if (!dots.startTracking()) {
+      toast(`Line up all 4 indicators with your dots first – each turns green when it sees one (${dots.foundCount}/4 now).`, { duration: 6000 });
+      return;
+    }
+  }
+  if (!value) endTracking();
   app.locked = value;
   if (value) gestures.cancel();
   syncControls();
@@ -345,6 +515,7 @@ const camera = new CameraManager(el.video, {
       el.startBtn.textContent = 'Start camera';
     }
     el.startBtn.disabled = state === 'starting';
+    dots.setActive(state === 'running');
     if (state === 'running' && app.prefs.keepAwake) wake.enable();
     if (state === 'idle') wake.disable();
     syncControls();
@@ -387,10 +558,12 @@ document.addEventListener('visibilitychange', () => {
 
 function onResize() {
   const portrait = isPortrait();
-  if (app.orientation !== null && portrait !== app.orientation && app.hasImage) {
+  // While tracking, the dots keep the image aligned, so no realign warning.
+  if (app.orientation !== null && portrait !== app.orientation && app.hasImage && !dots.tracking) {
     el.realign.hidden = false;
   }
   app.orientation = portrait;
+  dots.resize();
   // Keep the centre on-screen but never reset scale / rotation / flip.
   if (app.hasImage) setTransform(app.t);
 }
@@ -473,6 +646,7 @@ window.addEventListener('unhandledrejection', (e) => console.error('[TraceCam] U
 function init() {
   app.focus = app.prefs.ui === 'focus';
   renderOpacity();
+  dots.setMode(app.prefs.dots);
   app.orientation = isPortrait();
 
   const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;

@@ -8,7 +8,7 @@
 // To ship an update: change VERSION below (and commit). Old caches are deleted
 // on activate. The page shows an "Update" button when a new worker is waiting.
 
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.2.0';
 const CACHE = `tracecam-${VERSION}`;
 
 const SHELL = [
@@ -19,8 +19,12 @@ const SHELL = [
   'js/app.js',
   'js/camera.js',
   'js/gestures.js',
+  'js/dot-detect.js',
+  'js/dots.js',
+  'js/image-filters.js',
   'js/image-loader.js',
   'js/prefs.js',
+  'js/tracking-math.js',
   'js/transform.js',
   'js/wakelock.js',
   'icons/icon.svg',

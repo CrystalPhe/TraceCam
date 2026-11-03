@@ -5,7 +5,9 @@ Put your phone on a stand or a cup above a sheet of paper, overlay a reference p
 - Live rear-camera preview, full screen, never stretched
 - Pick an image from Photos/Files; drag, pinch, twist, flip, rotate 90, fine-nudge, fit, reset
 - Opacity slider (0-100%, default 50%) with 25/50/75/100 presets
+- Image filters (Color, Gray, Contrast, Edges outline, Invert) and a 3x3 / 4x4 / 6x6 grid that moves with the image
 - **Lock** the image so it can't move while you draw
+- Optional **dot tracking**: stick 4 coloured dots on the paper and the image follows the paper if it moves (Rectangle or Custom indicator layout)
 - Focus mode (Hide controls), screen Keep-Awake, offline app shell
 - Private: images and camera video never leave the phone. No analytics, no third-party scripts.
 
@@ -33,6 +35,8 @@ I created this mostly for personal use :) So that it's accessible on iPhone whic
 - `camera.js` owns the one camera stream (never duplicated), maps errors to friendly messages, releases the camera on `pagehide` and resumes when you return. `wakelock.js` holds the Screen Wake Lock and re-requests it when the page is visible again.
 - `service-worker.js` caches only the app files (network-first, so you always get updates when online; falls back to cache offline). It never caches images or camera data.
 - Preferences (opacity, keep-awake, nudge step, controls hidden/shown) are in `localStorage`. Images are **not** saved.
+
+**Dot tracking.** `dots.js` copies the visible part of the camera frame into a small canvas (400 px on the long side) about 15 times a second. `dot-detect.js` looks for strongly coloured pixels near each indicator (paper and pencil are grey, so they're ignored) and remembers each sticker's colour and size when you lock. While locked, each sticker is searched for near where it should be; `tracking-math.js` fits a transform from the lock-time positions to the current ones (4 dots: perspective, 3: affine, 2: move/rotate/scale, fewer: hold still) and applies it to the image layer as a CSS `matrix3d`. Tracking works in camera-pixel coordinates, so it survives screen-size changes. On Unlock, the move/rotate/scale part is folded back into the normal overlay transform, so the image doesn't jump.
 
 **Camera vs. image alignment.** The camera fills the screen and may crop its edges to avoid stretching. The overlay is positioned on the *screen*, which is exactly the cropped view you see, so what you see is what you trace. The app is **not** calibrated to the paper: if the phone or paper moves, or you rotate the phone (which re-crops the view), realign. A banner reminds you when the screen rotates.
 
@@ -188,6 +192,7 @@ Diagnostic messages (never including your images) are written to the browser con
 - **HEIC:** Safari usually converts Photos picks to JPEG automatically. If a HEIC file can't be decoded you get a message instead of a crash. This isn't claimed to work for every HEIC file.
 - **Large images** are reduced so the longest side is at most 2560 px to protect memory; this does not affect tracing.
 - **Alignment isn't calibrated.** The image is overlaid on the live view; perspective and position still depend on how your phone and paper are placed. Use a stable stand and a straight-down angle.
+- **Dot tracking is not ARKit.** It follows 4 coloured stickers, nothing else. It needs bright, saturated stickers (blue/green work best; red can be confused with skin), even lighting without glare, and the dots spread wide. If 3+ dots are covered the image holds still; if the paper moves a lot while they're covered, unlock and re-lock. Expect slight jitter and a little lag. It also uses more battery. Only tested with a simulated camera on a PC, never on an iPhone.
 - **Camera cropping:** the camera view fills the screen, so the very edges of the camera frame may be off-screen.
 - **Home Screen apps and camera on iOS** have had version-specific quirks. If the installed app can't open the camera but Safari can, use TraceCam in Safari.
 - **Icons:** iOS uses `icons/apple-touch-icon.png` (180x180, no transparency, iOS rounds the corners). Android-style PNGs and the SVG are also provided; the SVG alone isn't used by iOS for the Home Screen.
@@ -208,6 +213,10 @@ TraceCam/
     camera.js             camera manager + error mapping
     gestures.js           drag / pinch / twist (Pointer Events)
     transform.js          pure math (unit-tested)
+    dots.js               dot-tracking indicators + per-frame tracking loop
+    dot-detect.js         finds coloured sticker dots in a frame (unit-tested)
+    tracking-math.js      homography / affine / similarity fitting (unit-tested)
+    image-filters.js      Gray / Contrast / Edges filters
     image-loader.js       local decode + large-image downscale
     wakelock.js           Screen Wake Lock wrapper
     prefs.js              small localStorage preferences

@@ -21,8 +21,9 @@
   <!-- STAGE: camera + overlay share this one box, so they share one coordinate space. -->
   <div id="stage">
     <video id="camera" playsinline muted autoplay></video>
-    <div id="overlayLayer" aria-hidden="true"><img id="overlay" alt="" draggable="false" hidden></div>
+    <div id="overlayLayer" aria-hidden="true"><img id="overlay" alt="" draggable="false" hidden><svg id="grid" viewBox="0 0 1 1" preserveAspectRatio="none" hidden></svg></div>
     <div id="surface" aria-hidden="true"></div>
+    <div id="dots" aria-hidden="true"></div>
   </div>
 
   <header id="topbar">
@@ -104,6 +105,35 @@
       </div>
     </details>
 
+    <details id="look">
+      <summary>Filter &amp; grid</summary>
+      <div class="row seg" role="group" aria-label="Image filter">
+        <button class="btn small" type="button" data-filter="color" aria-pressed="true">Color</button>
+        <button class="btn small" type="button" data-filter="gray" aria-pressed="false">Gray</button>
+        <button class="btn small" type="button" data-filter="contrast" aria-pressed="false">Contrast</button>
+        <button class="btn small" type="button" data-filter="edges" aria-pressed="false">Edges</button>
+      </div>
+      <div class="row seg" role="group" aria-label="Grid">
+        <button class="btn small" type="button" data-grid="0" aria-pressed="true">No grid</button>
+        <button class="btn small" type="button" data-grid="3" aria-pressed="false">3×3</button>
+        <button class="btn small" type="button" data-grid="4" aria-pressed="false">4×4</button>
+        <button class="btn small" type="button" data-grid="6" aria-pressed="false">6×6</button>
+      </div>
+      <div class="row seg">
+        <button id="invertBtn" class="btn small" type="button" aria-pressed="false">Invert colors</button>
+      </div>
+    </details>
+
+    <details id="dotsPanel">
+      <summary>Dot tracking</summary>
+      <div class="row seg" role="group" aria-label="Dot tracking mode">
+        <button class="btn small" type="button" data-dots="off" aria-pressed="true">Off</button>
+        <button class="btn small" type="button" data-dots="rect" aria-pressed="false">Rectangle</button>
+        <button class="btn small" type="button" data-dots="custom" aria-pressed="false">Custom</button>
+      </div>
+      <p id="dotsHint" class="hint" aria-live="polite"></p>
+    </details>
+
     <details id="options">
       <summary>Options</summary>
       <div class="row between">
@@ -127,6 +157,14 @@
         <li>Set the opacity so you can see both the paper and the image.</li>
         <li>Tap <b>Lock</b> so the image can’t move while you draw. Tap <b>Unlock</b> to adjust again.</li>
         <li><b>Hide controls</b> clears the screen; <b>Show controls</b> brings them back.</li>
+      </ol>
+      <h3>Dot tracking (optional)</h3>
+      <ol>
+        <li>Stick 4 bright coloured round stickers (about 1 cm) on the paper, spread wide, outside the area you will draw. Blue or green work best; avoid red (it looks like skin) and any colour you draw with.</li>
+        <li>Open <b>Dot tracking</b>. <b>Rectangle</b> shows 4 fixed indicators – slide the paper so each sticker sits in one. <b>Custom</b> lets you drag each indicator onto a sticker; it snaps to the sticker’s centre.</li>
+        <li>Indicators turn green when they see a dot. Align your image, then tap <b>Lock</b> (needs all 4 green).</li>
+        <li>While locked the image follows the paper. Small rings show the dots being tracked. With 2 or more dots visible it keeps following; if your hand covers more, it holds still until they reappear.</li>
+        <li>Tap <b>Unlock</b> to stop tracking. The image stays where it is.</li>
       </ol>
       <h3>Good to know</h3>
       <ul>

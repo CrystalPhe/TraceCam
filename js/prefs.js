@@ -1,13 +1,20 @@
 // Lightweight preferences kept in localStorage. Only small settings are saved,
 // never images or camera frames.
 
-const KEY = 'tracecam.prefs.v1';
+import { FILTERS, GRID_SIZES } from './image-filters.js';
+import { DOT_MODES } from './dots.js';
+
+const KEY ='tracecam.prefs.v1';
 
 export const DEFAULT_PREFS = Object.freeze({
   opacity: 50, // percent
   keepAwake: true,
   nudgeStep: 1, // legacy preference; nudging is now fixed at 1 px
   ui: 'full', // 'full' | 'focus'
+  filter: 'color', // 'color' | 'gray' | 'contrast' | 'edges'
+  invert: false,
+  grid: 0, // 0 = off, else cells per side
+  dots: 'off', // dot tracking: 'off' | 'rect' | 'custom'
 });
 
 /** Validate untrusted data (from storage) and fill in defaults. */
@@ -19,6 +26,10 @@ export function sanitizePrefs(raw) {
   }
   if (typeof raw.keepAwake === 'boolean') p.keepAwake = raw.keepAwake;
   if (raw.ui === 'full' || raw.ui === 'focus') p.ui = raw.ui;
+  if (FILTERS.includes(raw.filter)) p.filter = raw.filter;
+  if (typeof raw.invert === 'boolean') p.invert = raw.invert;
+  if (GRID_SIZES.includes(raw.grid)) p.grid = raw.grid;
+  if (DOT_MODES.includes(raw.dots)) p.dots = raw.dots;
   return p;
 }
 

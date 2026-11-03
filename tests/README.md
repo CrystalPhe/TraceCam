@@ -22,7 +22,15 @@ Done during development in an embedded desktop browser, using a synthetic image 
 - [x] Lock: drag and Reset are ignored while locked; Unlock restores them.
 - [x] Mobile-width (375x812) layout renders correctly.
 
-Not exercised on desktop: a real camera stream, real two-finger pinch/twist, HEIC, wake lock, Home Screen install. (You can repeat the checks yourself: with a mouse, drag to move and use the scroll wheel to zoom.)
+Dot tracking, with a **simulated camera** (a canvas with 4 blue dots fed in place of getUserMedia):
+- [x] Rectangle mode: all 4 indicators turn green over the dots; status shows "Dots found 4/4".
+- [x] Lock starts tracking; moving the simulated paper by (30, 20) px moved the image by exactly (30, 20) px; rotating it rotated the image.
+- [x] 2 dots hidden: still tracking ("Tracking 2/4"); 3 hidden: holds still ("Tracking paused"); dots back: tracking resumes.
+- [x] Unlock: image stays exactly where tracking put it (no jump).
+- [x] Custom mode: dragging an indicator off a dot and releasing snaps it back onto the dot centre; lock + paper move back returns the image to its original spot.
+- [x] With 2 dots missing, Lock is refused with a message and the missing indicators turn red.
+
+Not exercised on desktop: a real camera stream (real lighting, glare, focus, sticker colours), real two-finger pinch/twist, HEIC, wake lock, Home Screen install. (You can repeat the checks yourself: with a mouse, drag to move and use the scroll wheel to zoom.)
 
 ## 3. Manual iPhone checklist (NOT yet performed)
 
@@ -57,6 +65,15 @@ Device: ____________  iOS: ________  Date: ________
 - [ ] Lock makes the state obvious (amber button); drags/pinches/buttons no longer move the image; opacity still works.
 - [ ] Unlock keeps the alignment.
 - [ ] Hide controls clears the screen; Show controls and Lock/Unlock remain reachable.
+
+**Dot tracking** (4 coloured stickers on the paper)
+- [ ] Rectangle and Custom modes show 4 indicators; they turn green over stickers and red/dashed when no dot is seen.
+- [ ] Custom: dragging an indicator works and it snaps onto the sticker.
+- [ ] Lock with all 4 green starts tracking; slowly sliding/rotating the paper keeps the image on the same spot of the paper.
+- [ ] Drawing with your hand over 1-2 dots keeps tracking; covering 3 holds still; uncovering resumes.
+- [ ] Unlock leaves the image where it was.
+- [ ] Note how much jitter/lag there is, how warm the phone gets, and battery use over 15 minutes.
+- [ ] Try blue, green and red stickers, and dim vs bright light.
 
 **Layout**
 - [ ] Portrait and landscape: nothing hidden under the notch / Dynamic Island / Home indicator.
